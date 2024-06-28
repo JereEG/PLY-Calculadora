@@ -69,9 +69,9 @@ def add_node(graph, node):
 
 
 class Node:
-    def __init__(self, op, children=None):
+    def __init__(self, op, children=[]):
         self.op = op
-        self.children = children if children else []
+        self.children = children 
 
     def __repr__(self):
         return f"Node({self.op}, {self.children})"
@@ -122,13 +122,14 @@ lexer = lex.lex()
 # Modificación en las reglas de producción para crear nodos
 def p_expression_plus(p):
     'expression : expression PLUS term'
-    p[0] = Node('+', [p[1], p[3]])
-    print(f"Created Node: {p[0].op} with children {[p[1], p[3]]}")
+    p[0] = Node('Operacion', [p[1],p[2], p[3]])
+    
+    print(f"Created Node: {p[0].op} with children {p[0].children}")
 
 
 def p_expression_minus(p):
     'expression : expression MINUS term'
-    p[0] = Node('-', [p[1], p[3]])
+    p[0] = Node('Operacion', [p[1],p[2],p[3]])
     print(f"Created Node: {p[0].op} with children {[p[1], p[3]]}")
 
 
@@ -140,14 +141,14 @@ def p_expression_term(p):
 
 def p_term_times(p):
     'term : term TIMES factor'
-    p[0] = Node('*', [p[1], p[3]])
+    p[0] = Node('Operacion', [p[1],p[2] ,p[3]])
     print(f"Created Node: {p[0].op} with children {[p[1], p[3]]}")
 
 
 def p_term_divide(p):
     'term : term DIVIDE factor'
-    p[0] = Node('/', [p[1], p[3]])
-    print(f"Created Node: {p[0].op} with children {[p[1], p[3]]}")
+    p[0] = Node('Operacion', [p[1],p[2] ,p[3]])
+    print(f"Created Node: {p[0].op} with children {[p[1],p[2], p[3]]}")
 
 
 def p_term_factor(p):
@@ -182,18 +183,29 @@ def press(num):
 
 # Función para evaluar la expresión final
 
+def evaluate(tree):
+    if type(tree.children[0]) == int:
+        return tree.children[0]
+    elif tree.children[1] == '+':
+        return evaluate(tree.children[0]) + evaluate(tree.children[2])
+    elif tree.children[1] == '-':
+        return evaluate(tree.children[0]) - evaluate(tree.children[2])
+    elif tree.children[1] == '*':
+        return evaluate(tree.children[0]) * evaluate(tree.children[2])
+    elif tree.children[1] == '/':
+        return evaluate(tree.children[0]) / evaluate(tree.children[2])
 
 def equalpress():
     global expression
     try:
         result = parser.parse(expression)
-        equation.set(str(result))
-        expression = str(result)
+        result_value = evaluate(result)
+        equation.set(str(result_value))
+        expression = str(result_value)
     except ZeroDivisionError:
         equation.set("0")
         expression = ""
-        messagebox.showerror(
-            title="Error", message="No se puede dividir por Cero")
+        messagebox.showerror(title="Error", message="No se puede dividir por Cero")
     except Exception:
         equation.set("0")
         expression = ""
@@ -222,21 +234,20 @@ def analyze_expression():
 
 
 def detail_tokens():
-    global expression, syntax_error
-    global derivations
-    try:
-        syntax_error = False
-        parser.parse(expression)
-        if not syntax_error:
-            derivation_str = "\n".join(derivations)
-            messagebox.showinfo(title="Derivación", message=derivation_str)
-        else:
-            messagebox.showerror(title="Error de análisis",
-                                 message="Error en la expresión")
-    except Exception as e:
-        messagebox.showerror(title="Error de análisis",
-                             message="Error en la expresión: " + str(e))
+    global expression
+    lexer.input(expression)
+    tokens_detail = []
     derivations = ['Σ', 'S']
+    tokens_detail.append(derivations)
+    while True:
+        tok = lexer.token()
+        if not tok:
+            break
+        tokens_detail.append(f'{tok.type}({tok.value})')
+    messagebox.showinfo(title="Detalle de Tokens",
+                        message=", ".join(tokens_detail))
+ 
+ #   
 
 
 # Función para limpiar el contenido del visor
