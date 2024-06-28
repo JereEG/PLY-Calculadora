@@ -122,13 +122,14 @@ lexer = lex.lex()
 # Modificación en las reglas de producción para crear nodos
 def p_expression_plus(p):
     'expression : expression PLUS term'
-    p[0] = Node('+', [p[1], p[3]])
-    print(f"Created Node: {p[0].op} with children {[p[1], p[3]]}")
+    p[0] = Node('Operacion', [p[1],p[2], p[3]])
+    
+    print(f"Created Node: {p[0].op} with children {[p[1],p[2],p[3]]}")
 
 
 def p_expression_minus(p):
     'expression : expression MINUS term'
-    p[0] = Node('-', [p[1], p[3]])
+    p[0] = Node('Operacion', [p[1],p[2],p[3]])
     print(f"Created Node: {p[0].op} with children {[p[1], p[3]]}")
 
 
@@ -140,13 +141,13 @@ def p_expression_term(p):
 
 def p_term_times(p):
     'term : term TIMES factor'
-    p[0] = Node('*', [p[1], p[3]])
+    p[0] = Node('Operacion', [p[1],p[2] ,p[3]])
     print(f"Created Node: {p[0].op} with children {[p[1], p[3]]}")
 
 
 def p_term_divide(p):
     'term : term DIVIDE factor'
-    p[0] = Node('/', [p[1], p[3]])
+    p[0] = Node('Operacion', [p[1],p[2] ,p[3]])
     print(f"Created Node: {p[0].op} with children {[p[1], p[3]]}")
 
 
