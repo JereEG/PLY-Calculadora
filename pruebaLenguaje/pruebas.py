@@ -49,7 +49,7 @@ def generate_and_display_tree():
 def add_node(graph, node):
     try:
         if isinstance(node, Node):
-            node_label = node.op
+            node_label = node.valor_nodo
         else:
             node_label = str(node)
 
@@ -57,7 +57,7 @@ def add_node(graph, node):
         graph.add_node(pydot.Node(node_name, label=node_label))
 
         if isinstance(node, Node):
-            for child in node.children:
+            for child in node.hijos:
                 child_name = f"node_{id(child)}"
                 add_node(graph, child)
                 graph.add_edge(pydot.Edge(node_name, child_name))
@@ -69,33 +69,33 @@ def add_node(graph, node):
 
 
 class Node:
-    def __init__(self, op, children=[]):
-        self.op = op
-        self.children = children 
+    def __init__(self, valor_nodo, hijos=[]):
+        self.valor_nodo = valor_nodo
+        self.hijos = hijos
 
     def __repr__(self):
-        return f"Node({self.op}, {self.children})"
+        return f"Node({self.valor_nodo}, {self.hijos})"
 
 
 # Tokens para el analizador léxico
 tokens = (
-    'NUMBER',
-    'PLUS',
-    'MINUS',
+    'NUMERO',
+    'SUMA',
+    'MENOS',
     'TIMES',
     'DIVIDE',
 )
 
 # Definiciones de tokens
-t_PLUS = r'\+'
-t_MINUS = r'-'
+t_SUMA = r'\+'
+t_MENOS = r'-'
 t_TIMES = r'\*'
 t_DIVIDE = r'/'
 
 # Definición de un número
 
 
-def t_NUMBER(t):
+def t_NUMERO(t):
     r'\d+'
     t.value = int(t.value)
     return t
@@ -120,17 +120,17 @@ lexer = lex.lex()
 
 
 # Modificación en las reglas de producción para crear nodos
-def p_expression_plus(p):
-    'expression : expression PLUS term'
-    p[0] = Node('Operacion', [p[1],p[2], p[3]])
-    
-    print(f"Created Node: {p[0].op} with children {p[0].children}")
+def p_expression_SUMA(p):
+    'expression : expression SUMA term'
+    p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
+
+    print(f"Created Node: {p[0].valor_nodo} with hijos {p[0].hijos}")
 
 
-def p_expression_minus(p):
-    'expression : expression MINUS term'
-    p[0] = Node('Operacion', [p[1],p[2],p[3]])
-    print(f"Created Node: {p[0].op} with children {[p[1], p[3]]}")
+def p_expression_MENOS(p):
+    'expression : expression MENOS term'
+    p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
+    print(f"Created Node: {p[0].valor_nodo} with hijos {[p[1], p[3]]}")
 
 
 def p_expression_term(p):
@@ -141,14 +141,14 @@ def p_expression_term(p):
 
 def p_term_times(p):
     'term : term TIMES factor'
-    p[0] = Node('Operacion', [p[1],p[2] ,p[3]])
-    print(f"Created Node: {p[0].op} with children {[p[1], p[3]]}")
+    p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
+    print(f"Created Node: {p[0].valor_nodo} with hijos {[p[1], p[3]]}")
 
 
 def p_term_divide(p):
     'term : term DIVIDE factor'
-    p[0] = Node('Operacion', [p[1],p[2] ,p[3]])
-    print(f"Created Node: {p[0].op} with children {[p[1],p[2], p[3]]}")
+    p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
+    print(f"Created Node: {p[0].valor_nodo} with hijos {[p[1],p[2], p[3]]}")
 
 
 def p_term_factor(p):
@@ -157,10 +157,10 @@ def p_term_factor(p):
     print(f"Passing up factor: {p[0]}")
 
 
-def p_factor_number(p):
-    'factor : NUMBER'
-    p[0] = Node('NUMBER', [p[1]])
-    print(f"Created Node: NUMBER with value {p[1]}")
+def p_factor_NUMERO(p):
+    'factor : NUMERO'
+    p[0] = Node('NUMERO', [p[1]])
+    print(f"Created Node: NUMERO with value {p[1]}")
 
 
 def p_error(p):
@@ -183,17 +183,19 @@ def press(num):
 
 # Función para evaluar la expresión final
 
+
 def evaluate(tree):
-    if type(tree.children[0]) == int:
-        return tree.children[0]
-    elif tree.children[1] == '+':
-        return evaluate(tree.children[0]) + evaluate(tree.children[2])
-    elif tree.children[1] == '-':
-        return evaluate(tree.children[0]) - evaluate(tree.children[2])
-    elif tree.children[1] == '*':
-        return evaluate(tree.children[0]) * evaluate(tree.children[2])
-    elif tree.children[1] == '/':
-        return evaluate(tree.children[0]) / evaluate(tree.children[2])
+    if type(tree.hijos[0]) == int:
+        return tree.hijos[0]
+    elif tree.hijos[1] == '+':
+        return evaluate(tree.hijos[0]) + evaluate(tree.hijos[2])
+    elif tree.hijos[1] == '-':
+        return evaluate(tree.hijos[0]) - evaluate(tree.hijos[2])
+    elif tree.hijos[1] == '*':
+        return evaluate(tree.hijos[0]) * evaluate(tree.hijos[2])
+    elif tree.hijos[1] == '/':
+        return evaluate(tree.hijos[0]) / evaluate(tree.hijos[2])
+
 
 def equalpress():
     global expression
@@ -205,7 +207,8 @@ def equalpress():
     except ZeroDivisionError:
         equation.set("0")
         expression = ""
-        messagebox.showerror(title="Error", message="No se puede dividir por Cero")
+        messagebox.showerror(
+            title="Error", message="No se puede dividir por Cero")
     except Exception:
         equation.set("0")
         expression = ""
@@ -246,8 +249,8 @@ def detail_tokens():
         tokens_detail.append(f'{tok.type}({tok.value})')
     messagebox.showinfo(title="Detalle de Tokens",
                         message=", ".join(tokens_detail))
- 
- #   
+
+ #
 
 
 # Función para limpiar el contenido del visor
