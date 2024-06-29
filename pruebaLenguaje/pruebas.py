@@ -183,8 +183,7 @@ def p_factor_NUMERO(p):
 
 def p_factor_expr(p):
     'factor : LPAREN expression RPAREN'
-    p[0] = p[2]
-
+    p[0] = Node('PARENS', [Node('LPAREN', [p[1]]), p[2], Node('RPAREN', [p[3]])])
     
 def p_error(p):
     global syntax_error
@@ -224,7 +223,8 @@ def equalpress():
     global expression
     try:
         result = parser.parse(expression)
-        result_value = evaluate(result)
+        analyze_expression()
+        result_value = int(evaluate(result))
         equation.set(str(result_value))
         expression = str(result_value)
     except ZeroDivisionError:
