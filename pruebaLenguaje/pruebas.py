@@ -13,6 +13,8 @@ derivations = ['Σ', 'S']
 syntax_error = False
 # para la expresión
 expression = ""
+# Diccionario para registrar los padres de cada nodo
+padres = {}
 
 
 # Función para generar y graficar el árbol sintáctico
@@ -43,24 +45,40 @@ def generate_and_display_tree():
         messagebox.showerror(
             title="Error", message=f"Se produjo un error: {e}")
 
+
 # Función recursiva para agregar nodos al árbol
-
-
-def add_node(graph, node):
+def add_node(p_grafo, p_nodo):
     try:
-        if isinstance(node, Node):
-            node_label = node.valor_nodo
-        else:
-            node_label = str(node)
+        # Asegurarse de que p_nodo sea una instancia de Node
+        if not isinstance(p_nodo, Node):
+            # Convertir valor directo en un nuevo nodo con lista vacía de hijos
+            p_nodo = Node(p_nodo, [])
 
-        node_name = f"node_{id(node)}"
-        graph.add_node(pydot.Node(node_name, label=node_label))
+        node_label = p_nodo.valor_nodo
+        # Identifica al nodo
+        node_name = f"node_{id(p_nodo)}"
+        p_grafo.add_node(pydot.Node(node_name, label=node_label))
 
-        if isinstance(node, Node):
-            for child in node.hijos:
-                child_name = f"node_{id(child)}"
-                add_node(graph, child)
-                graph.add_edge(pydot.Edge(node_name, child_name))
+        for hijo in p_nodo.hijos:
+            if isinstance(hijo, Node):
+                hijo_nombre = f"node_{id(hijo)}"
+
+                if hijo_nombre in padres:
+                    # Si el hijo ya tiene un padre, creamos una copia del nodo hijo
+                    nuevo_hijo = Node(hijo.valor_nodo, hijo.hijos)
+                    add_node(p_grafo, nuevo_hijo)
+                    nuevo_hijo_nombre = f"node_{id(nuevo_hijo)}"
+                    p_grafo.add_edge(pydot.Edge(node_name, nuevo_hijo_nombre))
+                else:
+                    padres[hijo_nombre] = node_name
+                    add_node(p_grafo, hijo)
+                    p_grafo.add_edge(pydot.Edge(node_name, hijo_nombre))
+            else:
+                # Manejo de valores directos, convertimos a un nuevo nodo de tipo `Node`
+                nuevo_hijo = Node(hijo, [])
+                add_node(p_grafo, nuevo_hijo)
+                nuevo_hijo_nombre = f"node_{id(nuevo_hijo)}"
+                p_grafo.add_edge(pydot.Edge(node_name, nuevo_hijo_nombre))
     except Exception as e:
         print(f"Error en add_node: {e}")
         raise
@@ -69,12 +87,9 @@ def add_node(graph, node):
 
 
 class Node:
-    def __init__(self, valor_nodo, hijos=[]):
+    def __init__(self, valor_nodo, hijos=None):
         self.valor_nodo = valor_nodo
-        self.hijos = hijos
-
-    def __repr__(self):
-        return f"Node({self.valor_nodo}, {self.hijos})"
+        self.hijos = hijos if hijos is not None else []
 
 
 # Tokens para el analizador léxico

@@ -3,10 +3,10 @@ from tkinter import messagebox
 import ply.lex as lex
 import ply.yacc as yacc
 import pydot
-import os
+# import os
 
 # Configura la ruta del ejecutable 'dot'
-os.environ["PATH"] += os.pathsep + r'C:\Program Files\Graphviz\bin'
+# os.environ["PATH"] += os.pathsep + r'C:\Program Files\Graphviz\bin'
 
 # Clase para representar los nodos del árbol sintáctico
 
