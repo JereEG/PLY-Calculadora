@@ -99,6 +99,8 @@ tokens = (
     'MENOS',
     'TIMES',
     'DIVIDE',
+    'LPAREN',
+    'RPAREN',
 )
 
 # Definiciones de tokens
@@ -106,7 +108,8 @@ t_SUMA = r'\+'
 t_MENOS = r'-'
 t_TIMES = r'\*'
 t_DIVIDE = r'/'
-
+t_LPAREN = r'\('
+t_RPAREN = r'\)'
 # Definición de un número
 
 
@@ -178,6 +181,11 @@ def p_factor_NUMERO(p):
     print(f"Created Node: NUMERO with value {p[1]}")
 
 
+def p_factor_expr(p):
+    'factor : LPAREN expression RPAREN'
+    p[0] = p[2]
+
+    
 def p_error(p):
     global syntax_error
     syntax_error = True
@@ -290,11 +298,12 @@ equation.set('0')
 
 # Creación de los botones
 buttons = [
-    ('1', 2, 0), ('2', 2, 1), ('3', 2, 2), ('4', 3, 0),
-    ('5', 3, 1), ('6', 3, 2), ('7', 4, 0), ('8', 4, 1),
-    ('9', 4, 2), ('0', 5, 0), ('+', 2, 3), ('-', 3, 3),
-    ('*', 4, 3), ('/', 5, 3), ('=', 5, 2), ('Clear', 5, 1),
-    ('Analizar', 6, 1), ('Detalle', 6, 2), ("Mostrar Árbol", 6, 2)
+    ('1', 2, 0), ('2', 2, 1), ('3', 2, 2), ('+', 2, 3),
+    ('4', 3, 0),('5', 3, 1), ('6', 3, 2),('-', 3, 3),
+    ('7', 4, 0), ('8', 4, 1),('9', 4, 2),('*', 4, 3),
+    ('0', 5, 0),('Clear', 5, 1),('=', 5, 2), ('/', 5, 3),  
+    ('(',6,0),('Analizar', 6, 1), ('Detalle', 6, 2),(')',6,3), ("Mostrar Árbol", 6, 2),
+    
 ]
 
 for (text, row, col) in buttons:
