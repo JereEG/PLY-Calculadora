@@ -225,16 +225,19 @@ def evaluate(tree):
         return evaluate(tree.hijos[0]) * evaluate(tree.hijos[2])
     elif tree.hijos[1] == '/':
         return evaluate(tree.hijos[0]) / evaluate(tree.hijos[2])
-
+    elif tree.hijos[0].hijos[0] == '(':
+        return evaluate(tree.hijos[1]) 
 
 def equalpress():
     global expression
     try:
         result = parser.parse(expression)
+ 
         analyze_expression()
-        result_value = int(evaluate(result))
-        equation.set(str(result_value))
-        expression = str(result_value)
+        result_value = evaluate(result)
+        
+        equation.set(str(int(result_value)))
+        expression = str(int(result_value))
     except ZeroDivisionError:
         equation.set("0")
         expression = ""
