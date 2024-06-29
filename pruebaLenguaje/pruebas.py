@@ -147,10 +147,18 @@ def p_expression_SUMA(p):
 
 def p_expression_MENOS(p):
     'expression : expression MENOS term'
+ 
+
+    #Jere's idea
     p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
-    print(f"Created Node: {p[0].valor_nodo} with hijos {[p[1], p[3]]}")
 
-
+    #   Mauri's idea
+    #   p[0] = Node('OperacionBinaria', [p[1],'+',Node('Negativo',[p[2] ,p[3]])])
+   
+def p_factor_unary_minus(p):
+    'factor : MENOS factor'
+    p[0] = Node('Negativo',[p[1], p[2]])
+   
 def p_expression_term(p):
     'expression : term'
     p[0] = p[1]
@@ -211,8 +219,8 @@ def evaluate(tree):
         return tree.hijos[0]
     elif tree.hijos[1] == '+':
         return evaluate(tree.hijos[0]) + evaluate(tree.hijos[2])
-    elif tree.hijos[1] == '-':
-        return evaluate(tree.hijos[0]) - evaluate(tree.hijos[2])
+    elif tree.hijos[0] == '-':
+        return -evaluate(tree.hijos[1])
     elif tree.hijos[1] == '*':
         return evaluate(tree.hijos[0]) * evaluate(tree.hijos[2])
     elif tree.hijos[1] == '/':
