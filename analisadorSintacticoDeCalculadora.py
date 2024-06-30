@@ -10,18 +10,162 @@ derivations = ['Σ', 'S']
 # para errores de sintaxis
 syntax_error = False
 # para la expresión
-expression = ""
+vExpression = ""
 # Diccionario para registrar los padres de cada nodo
 padres = {}
 
 
-# Función para generar y graficar el árbol sintáctico
+# Clase para representar los nodos del árbol sintáctico
+class Node:
+    def __init__(self, valor_nodo, hijos=None):
+        self.valor_nodo = valor_nodo
+        self.hijos = hijos if hijos is not None else []
+
+    def __repr__(self):
+        return f"Node(valor_nodo={self.valor_nodo}, hijos={self.hijos})"
+
+    def get_forma_setencial(self, indent=0):
+        """
+        Obtiene la derivación del árbol sintáctico como una lista de reglas de producción.
+        :param indent: Nivel de indentación para mostrar la estructura del árbol.
+        :return: Lista de cadenas que representan la derivación.
+        """
+        derivation = []
+        indent_str = '  ' * indent
+
+        if self.hijos:
+            regla = f"{self.valor_nodo} -> " + ' '.join(
+                [str(hijo.valor_nodo) if isinstance(hijo, Node) else str(hijo) for hijo in self.hijos])
+            derivation.append(indent_str + regla)
+
+            for hijo in self.hijos:
+                if isinstance(hijo, Node):
+                    derivation.extend(hijo.get_forma_setencial(indent + 1))
+        else:
+            derivation.append(indent_str + str(self.valor_nodo))
+
+        return derivation
+
+
+# Tokens para el analizador léxico
+tokens = (
+    'NUMERO',
+    'SUMA',
+    'MENOS',
+    'TIMES',
+    'DIVIDE',
+    'LPAREN',
+    'RPAREN',
+)
+
+# Definiciones de tokens
+t_SUMA = r'\+'
+t_MENOS = r'-'
+t_TIMES = r'\*'
+t_DIVIDE = r'/'
+t_LPAREN = r'\('
+t_RPAREN = r'\)'
+# Definición de un número
+
+
+def t_NUMERO(t):
+    r'\d+'
+    t.value = int(t.value)
+    return t
+
+
+# Ignorar espacios
+t_ignore = ' \t'
+
+# Manejo de errores léxicos
+
+
+def t_error(t):
+    print(f"Caracter ilegal '{t.value[0]}'")
+    t.lexer.skip(1)
+
+
+# Construcción del analizador léxico
+lexer = lex.lex()
+
+# Modificación en las reglas de producción para crear nodos
+
+
+def p_expression_SUMA(p):
+    'expression : expression SUMA termino'
+    p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
+
+    print(f"Created Node: {p[0].valor_nodo} with hijos {p[0].hijos}")
+
+
+def p_expression_MENOS(p):
+    'expression : expression MENOS termino'
+
+    # Jere's idea
+    # p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
+
+    #   Mauri's idea
+    p[0] = Node('OperacionBinaria', [p[1], '+',
+                Node('Negativo', [p[2], p[3]])])
+
+
+def p_factor_unary_minus(p):
+    'factor : MENOS factor'
+    p[0] = Node('Negativo', [p[1], p[2]])
+
+
+def p_expression_term(p):
+    'expression : termino'
+    p[0] = p[1]
+    print(f"Passing up termino: {p[0]}")
+
+
+def p_term_times(p):
+    'termino : termino TIMES factor'
+    p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
+    print(f"Created Node: {p[0].valor_nodo} with hijos {[p[1], p[3]]}")
+
+
+def p_term_divide(p):
+    'termino : termino DIVIDE factor'
+    p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
+    print(f"Created Node: {p[0].valor_nodo} with hijos {[p[1],p[2], p[3]]}")
+
+
+def p_term_factor(p):
+    'termino : factor'
+    p[0] = p[1]
+    print(f"Passing up factor: {p[0]}")
+
+
+def p_factor_NUMERO(p):
+    'factor : NUMERO'
+    p[0] = Node('NUMERO', [p[1]])
+    print(f"Created Node: NUMERO with value {p[1]}")
+
+
+def p_factor_expr(p):
+    'factor : LPAREN expression RPAREN'
+    p[0] = Node('PARENS', [Node('LPAREN', [p[1]]),
+                p[2], Node('RPAREN', [p[3]])])
+
+
+def p_error(p):
+    global syntax_error
+    syntax_error = True
+    print("Error de sintaxis")
+
+
+# Construcción del analizador sintáctico
+parser = yacc.yacc()
+
+
 # Función para generar y graficar el árbol sintáctico
 def generate_and_display_tree():
-    global expression
+    global vExpression
 
     try:
-        result = parser.parse(expression, tracking=True)
+        result = parser.parse(vExpression, tracking=True)
         print(f"Parser result: {result}")
         if isinstance(result, Node):
             graph = pydot.Dot(graph_type='graph')
@@ -80,227 +224,21 @@ def add_node(p_grafo, p_nodo):
         print(f"Error en add_node: {e}")
         raise
 
-# Clase para representar los nodos del árbol sintáctico
-
-
-class Node:
-    def __init__(self, valor_nodo, hijos=None):
-        self.valor_nodo = valor_nodo
-        self.hijos = hijos if hijos is not None else []
-
-    def __repr__(self):
-        return f"Node(valor_nodo={self.valor_nodo}, hijos={self.hijos})"
-
-    def get_forma_setencial(self, indent=0):
-        """
-        Obtiene la derivación del árbol sintáctico como una lista de reglas de producción.
-        :param indent: Nivel de indentación para mostrar la estructura del árbol.
-        :return: Lista de cadenas que representan la derivación.
-        """
-        derivation = []
-        indent_str = '  ' * indent
-
-        if self.hijos:
-            regla = f"{self.valor_nodo} -> " + ' '.join(
-                [str(hijo.valor_nodo) if isinstance(hijo, Node) else str(hijo) for hijo in self.hijos])
-            derivation.append(indent_str + regla)
-
-            for hijo in self.hijos:
-                if isinstance(hijo, Node):
-                    derivation.extend(hijo.get_forma_setencial(indent + 1))
-        else:
-            derivation.append(indent_str + str(self.valor_nodo))
-
-        return derivation
-
-    def get_derivacion_por_izquierda(self):
-        """
-        Obtiene la derivación por izquierda del árbol sintáctico.
-        :return: Lista de cadenas que representan la derivación.
-        """
-        derivation = [self._derivacion_por_izquierda_helper()]
-
-        # Continuar expandiendo los no terminales más a la izquierda
-        while True:
-            next_derivation = self._expandir_izquierda(derivation[-1])
-            if next_derivation == derivation[-1]:  # No se puede expandir más
-                break
-            derivation.append(next_derivation)
-
-        return derivation
-
-    def _derivacion_por_izquierda_helper(self):
-        """
-        Genera la representación inicial del árbol en forma de cadena.
-        :return: Una cadena que representa la derivación inicial.
-        """
-        if self.hijos:
-            return f"{self.valor_nodo} {' '.join([hijo.valor_nodo if isinstance(hijo, Node) else str(hijo) for hijo in self.hijos])}"
-        else:
-            return self.valor_nodo
-
-    def _expandir_izquierda(self, derivation):
-        """
-        Expande el primer no terminal encontrado en la derivación.
-        :param derivation: La derivación actual en forma de cadena.
-        :return: La nueva derivación después de la expansión.
-        """
-        tokens = derivation.split()
-        for i, token in enumerate(tokens):
-            # Asumiendo que los no terminales están entre <>
-            if token.startswith("<") and token.endswith(">"):
-                node = self._encontrar_nodo(token)
-                if node and node.hijos:
-                    # Reemplazar el no terminal por sus hijos
-                    tokens[i:i + 1] = [hijo.valor_nodo if isinstance(
-                        hijo, Node) else str(hijo) for hijo in node.hijos]
-                    break
-        return " ".join(tokens)
-
-    def _encontrar_nodo(self, valor):
-        """
-        Encuentra el nodo con el valor dado en el árbol.
-        :param valor: El valor del nodo a buscar.
-        :return: El nodo encontrado o None si no se encuentra.
-        """
-        if self.valor_nodo == valor:
-            return self
-        for hijo in self.hijos:
-            if isinstance(hijo, Node):
-                resultado = hijo._encontrar_nodo(valor)
-                if resultado:
-                    return resultado
-        return None
-
-
-# Tokens para el analizador léxico
-tokens = (
-    'NUMERO',
-    'SUMA',
-    'MENOS',
-    'TIMES',
-    'DIVIDE',
-    'LPAREN',
-    'RPAREN',
-)
-
-# Definiciones de tokens
-t_SUMA = r'\+'
-t_MENOS = r'-'
-t_TIMES = r'\*'
-t_DIVIDE = r'/'
-t_LPAREN = r'\('
-t_RPAREN = r'\)'
-# Definición de un número
-
-
-def t_NUMERO(t):
-    r'\d+'
-    t.value = int(t.value)
-    return t
-
-
-# Ignorar espacios
-t_ignore = ' \t'
-
-# Manejo de errores léxicos
-
-
-def t_error(t):
-    print(f"Caracter ilegal '{t.value[0]}'")
-    t.lexer.skip(1)
-
-
-# Construcción del analizador léxico
-lexer = lex.lex()
-
-
-# Definición de la gramática para el analizador sintáctico
-
-
-# Modificación en las reglas de producción para crear nodos
-def p_expression_SUMA(p):
-    'expression : expression SUMA term'
-    p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
-
-    print(f"Created Node: {p[0].valor_nodo} with hijos {p[0].hijos}")
-
-
-def p_expression_MENOS(p):
-    'expression : expression MENOS term'
-
-    # Jere's idea
-    p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
-
-    #   Mauri's idea
-    #   p[0] = Node('OperacionBinaria', [p[1],'+',Node('Negativo',[p[2] ,p[3]])])
-
-
-def p_factor_unary_minus(p):
-    'factor : MENOS factor'
-    p[0] = Node('Negativo', [p[1], p[2]])
-
-
-def p_expression_term(p):
-    'expression : term'
-    p[0] = p[1]
-    print(f"Passing up term: {p[0]}")
-
-
-def p_term_times(p):
-    'term : term TIMES factor'
-    p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
-    print(f"Created Node: {p[0].valor_nodo} with hijos {[p[1], p[3]]}")
-
-
-def p_term_divide(p):
-    'term : term DIVIDE factor'
-    p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
-    print(f"Created Node: {p[0].valor_nodo} with hijos {[p[1],p[2], p[3]]}")
-
-
-def p_term_factor(p):
-    'term : factor'
-    p[0] = p[1]
-    print(f"Passing up factor: {p[0]}")
-
-
-def p_factor_NUMERO(p):
-    'factor : NUMERO'
-    p[0] = Node('NUMERO', [p[1]])
-    print(f"Created Node: NUMERO with value {p[1]}")
-
-
-def p_factor_expr(p):
-    'factor : LPAREN expression RPAREN'
-    p[0] = Node('PARENS', [Node('LPAREN', [p[1]]),
-                p[2], Node('RPAREN', [p[3]])])
-
-
-def p_error(p):
-    global syntax_error
-    syntax_error = True
-    print("Error de sintaxis")
-
-
-# Construcción del analizador sintáctico
-parser = yacc.yacc()
-
 
 # Función para actualizar el contenido del visor
 
 
 def press(num):
-    global expression
-    expression = expression + str(num)
-    equation.set(expression)
+    global vExpression
+    vExpression = vExpression + str(num)
+    equation.set(vExpression)
 
 # Función para evaluar la expresión final
 
 
 def evaluate(tree):
     if type(tree.hijos[0]) == int:
-            
+
         return tree.hijos[0]
     elif tree.hijos[1] == '+':
         return evaluate(tree.hijos[0]) + evaluate(tree.hijos[2])
@@ -317,16 +255,16 @@ def evaluate(tree):
 
 
 def equalpress():
-    global expression
+    global vExpression
     try:
-        result = parser.parse(expression)
+        result = parser.parse(vExpression)
 
         analyze_expression()
-    
+
         result_value = evaluate(result)
 
         equation.set(str(int(result_value)))
-        expression = str(int(result_value))
+        vExpression = str(int(result_value))
     except ZeroDivisionError:
         clear()
         messagebox.showerror(
@@ -335,15 +273,13 @@ def equalpress():
         clear()
         messagebox.showerror(title="Error", message="Se produjo un error")
 
-# Función para analizar la expresión
-
 
 # Función para analizar la expresión
 def analyze_expression():
-    global expression, syntax_error
+    global vExpression, syntax_error
     try:
         syntax_error = False
-        parser.parse(expression)
+        parser.parse(vExpression)
         if not syntax_error:
             messagebox.showinfo(
                 title="Análisis", message="La expresión es válida")
@@ -358,9 +294,9 @@ def analyze_expression():
 
 
 def mostrarDerivacion():
-    global expression
+    global vExpression
     try:
-        result = parser.parse(expression)
+        result = parser.parse(vExpression)
         if isinstance(result, Node):
             derivation = result.get_forma_setencial()
             derivation_str = '\n'.join(derivation)
@@ -375,9 +311,9 @@ def mostrarDerivacion():
 
 
 def mostrarDerivacionPorIzquierda():
-    global expression
+    global vExpression
     try:
-        result = parser.parse(expression)
+        result = parser.parse(vExpression)
         if isinstance(result, Node):
             derivationPorIzquierda = result.get_derivacion_por_izquierda()
             derivationPorIzquierda_str = '\n'.join(derivationPorIzquierda)
@@ -392,8 +328,8 @@ def mostrarDerivacionPorIzquierda():
 
 
 def detail_tokens():
-    global expression
-    lexer.input(expression)
+    global vExpression
+    lexer.input(vExpression)
     tokens_detail = []
     derivations = ['Σ', 'S']
     tokens_detail.append(derivations)
@@ -405,32 +341,29 @@ def detail_tokens():
     messagebox.showinfo(title="Detalle de Tokens",
                         message=", ".join(tokens_detail))
 
- #
-
-
 # Función para limpiar el contenido del visor
 
 
 def clear():
-    global expression
-    expression = ""
+    global vExpression
+    vExpression = ""
     equation.set("")
 
 
 def borrarUltimo():
-    global expression
+    global vExpression
     # Verifica si la expresión no está vacía
-    if expression:
+    if vExpression:
         # Elimina el último carácter de la cadena
-        expression = expression[:-1]
+        vExpression = vExpression[:-1]
         # Actualiza el valor de la expresión en la interfaz
-        equation.set(expression)
+        equation.set(vExpression)
     else:
         # Si la expresión está vacía, asegúrate de que el valor mostrado también esté vacío
         clear()
 
 
-# Configuración de la interfaz gráfica
+# ***********Configuración de la interfaz gráfica********************
 ventana = Tk()
 ventana.title("Calculadora")
 ventana.geometry("380x380")  # Ajuste del tamaño de la ventana
