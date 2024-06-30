@@ -5,9 +5,6 @@ import ply.lex as lex
 import ply.yacc as yacc
 import pydot
 
-# pydot.graphviz.set_graphviz_executables(
-#   dot=r'C:\Program Files\Graphviz\bin\dot.exe')
-
 # Variables globales
 derivations = ['Σ', 'S']
 # para errores de sintaxis
@@ -360,8 +357,8 @@ buttons = [
     ('4', 3, 0), ('5', 3, 1), ('6', 3, 2), ('-', 3, 3),
     ('7', 4, 0), ('8', 4, 1), ('9', 4, 2), ('*', 4, 3),
     ('0', 5, 0), ('Clear', 5, 1), ('=', 5, 2), ('/', 5, 3),
-    ('(', 6, 0), ('Analizar', 6, 1), ('Detalle', 6, 2),
-    (')', 6, 3), ("Mostrar Árbol", 6, 2),
+    ('(', 6, 0), (')', 6, 3), ('Analizar', 6, 1),
+    ('Derivación', 6, 2), ("Mostrar Árbol", 6, 2),
 
 ]
 
@@ -372,12 +369,12 @@ for (text, row, col) in buttons:
     elif text == 'Clear':
         button = Button(text=text, fg='black',
                         command=clear, height=1, width=7)
+    elif text == 'Derivación':
+        button = Button(text=text, fg='black',
+                        command=mostrarDerivacion, height=1, width=8)
     elif text == 'Analizar':
         button = Button(text=text, fg='black',
-                        command=mostrarDerivacion, height=1, width=7)
-    elif text == 'Detalle':
-        button = Button(text=text, fg='black',
-                        command=detail_tokens, height=1, width=7)
+                        command=analyze_expression, height=1, width=7)
     elif text == "Mostrar Árbol":
         button_show_tree = Button(text="Mostrar Árbol", fg='black',
                                   command=generate_and_display_tree, height=1, width=15)
