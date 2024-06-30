@@ -1,3 +1,4 @@
+# Creditos a dabeaz,
 from tkinter import *
 from tkinter import messagebox
 import ply.lex as lex
@@ -91,6 +92,31 @@ class Node:
         self.valor_nodo = valor_nodo
         self.hijos = hijos if hijos is not None else []
 
+    def __repr__(self):
+        return f"Node(valor_nodo={self.valor_nodo}, hijos={self.hijos})"
+
+    def get_derivation(self, indent=0):
+        """
+        Obtiene la derivación del árbol sintáctico como una lista de reglas de producción.
+        :param indent: Nivel de indentación para mostrar la estructura del árbol.
+        :return: Lista de cadenas que representan la derivación.
+        """
+        derivation = []
+        indent_str = '  ' * indent
+
+        if self.hijos:
+            regla = f"{self.valor_nodo} -> " + ' '.join(
+                [str(hijo.valor_nodo) if isinstance(hijo, Node) else str(hijo) for hijo in self.hijos])
+            derivation.append(indent_str + regla)
+
+            for hijo in self.hijos:
+                if isinstance(hijo, Node):
+                    derivation.extend(hijo.get_derivation(indent + 1))
+        else:
+            derivation.append(indent_str + str(self.valor_nodo))
+
+        return derivation
+
 
 # Tokens para el analizador léxico
 tokens = (
@@ -147,18 +173,19 @@ def p_expression_SUMA(p):
 
 def p_expression_MENOS(p):
     'expression : expression MENOS term'
- 
 
-    #Jere's idea
+    # Jere's idea
     p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
 
     #   Mauri's idea
     #   p[0] = Node('OperacionBinaria', [p[1],'+',Node('Negativo',[p[2] ,p[3]])])
-   
+
+
 def p_factor_unary_minus(p):
     'factor : MENOS factor'
-    p[0] = Node('Negativo',[p[1], p[2]])
-   
+    p[0] = Node('Negativo', [p[1], p[2]])
+
+
 def p_expression_term(p):
     'expression : term'
     p[0] = p[1]
@@ -191,8 +218,10 @@ def p_factor_NUMERO(p):
 
 def p_factor_expr(p):
     'factor : LPAREN expression RPAREN'
-    p[0] = Node('PARENS', [Node('LPAREN', [p[1]]), p[2], Node('RPAREN', [p[3]])])
-    
+    p[0] = Node('PARENS', [Node('LPAREN', [p[1]]),
+                p[2], Node('RPAREN', [p[3]])])
+
+
 def p_error(p):
     global syntax_error
     syntax_error = True
@@ -226,16 +255,17 @@ def evaluate(tree):
     elif tree.hijos[1] == '/':
         return evaluate(tree.hijos[0]) / evaluate(tree.hijos[2])
     elif tree.hijos[0].hijos[0] == '(':
-        return evaluate(tree.hijos[1]) 
+        return evaluate(tree.hijos[1])
+
 
 def equalpress():
     global expression
     try:
         result = parser.parse(expression)
- 
+
         analyze_expression()
         result_value = evaluate(result)
-        
+
         equation.set(str(int(result_value)))
         expression = str(int(result_value))
     except ZeroDivisionError:
@@ -268,6 +298,23 @@ def analyze_expression():
                              message="Error en la expresión: " + str(e))
 
 # Función para detallar los tokens de la expresión
+
+
+def mostrarDerivacion():
+    global expression
+    try:
+        result = parser.parse(expression)
+        if isinstance(result, Node):
+            derivation = result.get_derivation()
+            derivation_str = '\n'.join(derivation)
+            messagebox.showinfo(title="Derivación",
+                                message="Derivación:\n" + derivation_str)
+        else:
+            messagebox.showerror(
+                title="Error", message="No se pudo generar la derivación.")
+    except Exception as e:
+        messagebox.showerror(title="Error",
+                             message="Se produjo un error: " + str(e))
 
 
 def detail_tokens():
@@ -310,11 +357,12 @@ equation.set('0')
 # Creación de los botones
 buttons = [
     ('1', 2, 0), ('2', 2, 1), ('3', 2, 2), ('+', 2, 3),
-    ('4', 3, 0),('5', 3, 1), ('6', 3, 2),('-', 3, 3),
-    ('7', 4, 0), ('8', 4, 1),('9', 4, 2),('*', 4, 3),
-    ('0', 5, 0),('Clear', 5, 1),('=', 5, 2), ('/', 5, 3),  
-    ('(',6,0),('Analizar', 6, 1), ('Detalle', 6, 2),(')',6,3), ("Mostrar Árbol", 6, 2),
-    
+    ('4', 3, 0), ('5', 3, 1), ('6', 3, 2), ('-', 3, 3),
+    ('7', 4, 0), ('8', 4, 1), ('9', 4, 2), ('*', 4, 3),
+    ('0', 5, 0), ('Clear', 5, 1), ('=', 5, 2), ('/', 5, 3),
+    ('(', 6, 0), ('Analizar', 6, 1), ('Detalle', 6, 2),
+    (')', 6, 3), ("Mostrar Árbol", 6, 2),
+
 ]
 
 for (text, row, col) in buttons:
@@ -326,7 +374,7 @@ for (text, row, col) in buttons:
                         command=clear, height=1, width=7)
     elif text == 'Analizar':
         button = Button(text=text, fg='black',
-                        command=analyze_expression, height=1, width=7)
+                        command=mostrarDerivacion, height=1, width=7)
     elif text == 'Detalle':
         button = Button(text=text, fg='black',
                         command=detail_tokens, height=1, width=7)
