@@ -10,7 +10,7 @@ derivations = ['Σ', 'S']
 # para errores de sintaxis
 syntax_error = False
 # para la expresión
-expression = ""
+expression = "0"
 # Diccionario para registrar los padres de cada nodo
 padres = {}
 
@@ -33,13 +33,12 @@ def generate_and_display_tree():
             messagebox.showerror(
                 title="Error", message="No se pudo generar el árbol sintáctico.")
     except ZeroDivisionError:
-        equation.set("0")
-        expression = ""
+        clear()
         messagebox.showerror(
             title="Error", message="No se puede dividir por Cero")
     except Exception as e:
         equation.set("0")
-        expression = ""
+        clear()
         messagebox.showerror(
             title="Error", message=f"Se produjo un error: {e}")
 
@@ -92,7 +91,7 @@ class Node:
     def __repr__(self):
         return f"Node(valor_nodo={self.valor_nodo}, hijos={self.hijos})"
 
-    def get_derivation(self, indent=0):
+    def get_forma_setencial(self, indent=0):
         """
         Obtiene la derivación del árbol sintáctico como una lista de reglas de producción.
         :param indent: Nivel de indentación para mostrar la estructura del árbol.
@@ -108,7 +107,7 @@ class Node:
 
             for hijo in self.hijos:
                 if isinstance(hijo, Node):
-                    derivation.extend(hijo.get_derivation(indent + 1))
+                    derivation.extend(hijo.get_forma_setencial(indent + 1))
         else:
             derivation.append(indent_str + str(self.valor_nodo))
 
@@ -266,13 +265,11 @@ def equalpress():
         equation.set(str(int(result_value)))
         expression = str(int(result_value))
     except ZeroDivisionError:
-        equation.set("0")
-        expression = ""
+        clear()
         messagebox.showerror(
             title="Error", message="No se puede dividir por Cero")
     except Exception:
-        equation.set("0")
-        expression = ""
+        clear()
         messagebox.showerror(title="Error", message="Se produjo un error")
 
 # Función para analizar la expresión
@@ -302,7 +299,7 @@ def mostrarDerivacion():
     try:
         result = parser.parse(expression)
         if isinstance(result, Node):
-            derivation = result.get_derivation()
+            derivation = result.get_forma_setencial()
             derivation_str = '\n'.join(derivation)
             messagebox.showinfo(title="Derivación",
                                 message="Derivación:\n" + derivation_str)
@@ -336,7 +333,7 @@ def detail_tokens():
 
 def clear():
     global expression
-    expression = ""
+    expression = "0"
     equation.set("0")
 
 
@@ -349,7 +346,7 @@ equation = StringVar()
 visor = Entry(textvariable=equation)
 visor.config(state='disabled')
 visor.grid(columnspan=4, ipadx=70)
-equation.set('0')
+equation.set("0")
 
 # Creación de los botones
 buttons = [
@@ -358,7 +355,7 @@ buttons = [
     ('7', 4, 0), ('8', 4, 1), ('9', 4, 2), ('*', 4, 3),
     ('0', 5, 0), ('Clear', 5, 1), ('=', 5, 2), ('/', 5, 3),
     ('(', 6, 0), (')', 6, 3), ('Analizar', 6, 1),
-    ('Derivación', 6, 2), ("Mostrar Árbol", 6, 2),
+    ('Forma\nsentencial', 6, 2), ("Mostrar Árbol", 6, 2),
 
 ]
 
@@ -369,9 +366,9 @@ for (text, row, col) in buttons:
     elif text == 'Clear':
         button = Button(text=text, fg='black',
                         command=clear, height=1, width=7)
-    elif text == 'Derivación':
+    elif text == 'Forma\nsentencial':
         button = Button(text=text, fg='black',
-                        command=mostrarDerivacion, height=1, width=8)
+                        command=mostrarDerivacion, height=2, width=7)
     elif text == 'Analizar':
         button = Button(text=text, fg='black',
                         command=analyze_expression, height=1, width=7)
