@@ -10,7 +10,7 @@ derivations = ['Σ', 'S']
 # para errores de sintaxis
 syntax_error = False
 # para la expresión
-expression = "0"
+expression = ""
 # Diccionario para registrar los padres de cada nodo
 padres = {}
 
@@ -112,6 +112,65 @@ class Node:
             derivation.append(indent_str + str(self.valor_nodo))
 
         return derivation
+
+    def get_derivacion_por_izquierda(self):
+        """
+        Obtiene la derivación por izquierda del árbol sintáctico.
+        :return: Lista de cadenas que representan la derivación.
+        """
+        derivation = [self._derivacion_por_izquierda_helper()]
+
+        # Continuar expandiendo los no terminales más a la izquierda
+        while True:
+            next_derivation = self._expandir_izquierda(derivation[-1])
+            if next_derivation == derivation[-1]:  # No se puede expandir más
+                break
+            derivation.append(next_derivation)
+
+        return derivation
+
+    def _derivacion_por_izquierda_helper(self):
+        """
+        Genera la representación inicial del árbol en forma de cadena.
+        :return: Una cadena que representa la derivación inicial.
+        """
+        if self.hijos:
+            return f"{self.valor_nodo} {' '.join([hijo.valor_nodo if isinstance(hijo, Node) else str(hijo) for hijo in self.hijos])}"
+        else:
+            return self.valor_nodo
+
+    def _expandir_izquierda(self, derivation):
+        """
+        Expande el primer no terminal encontrado en la derivación.
+        :param derivation: La derivación actual en forma de cadena.
+        :return: La nueva derivación después de la expansión.
+        """
+        tokens = derivation.split()
+        for i, token in enumerate(tokens):
+            # Asumiendo que los no terminales están entre <>
+            if token.startswith("<") and token.endswith(">"):
+                node = self._encontrar_nodo(token)
+                if node and node.hijos:
+                    # Reemplazar el no terminal por sus hijos
+                    tokens[i:i + 1] = [hijo.valor_nodo if isinstance(
+                        hijo, Node) else str(hijo) for hijo in node.hijos]
+                    break
+        return " ".join(tokens)
+
+    def _encontrar_nodo(self, valor):
+        """
+        Encuentra el nodo con el valor dado en el árbol.
+        :param valor: El valor del nodo a buscar.
+        :return: El nodo encontrado o None si no se encuentra.
+        """
+        if self.valor_nodo == valor:
+            return self
+        for hijo in self.hijos:
+            if isinstance(hijo, Node):
+                resultado = hijo._encontrar_nodo(valor)
+                if resultado:
+                    return resultado
+        return None
 
 
 # Tokens para el analizador léxico
@@ -311,6 +370,23 @@ def mostrarDerivacion():
                              message="Se produjo un error: " + str(e))
 
 
+def mostrarDerivacionPorIzquierda():
+    global expression
+    try:
+        result = parser.parse(expression)
+        if isinstance(result, Node):
+            derivationPorIzquierda = result.get_derivacion_por_izquierda()
+            derivationPorIzquierda_str = '\n'.join(derivationPorIzquierda)
+            messagebox.showinfo(title="Derivación",
+                                message="Derivación:\n" + derivationPorIzquierda_str)
+        else:
+            messagebox.showerror(
+                title="Error", message="No se pudo generar la derivación.")
+    except Exception as e:
+        messagebox.showerror(title="Error",
+                             message="Se produjo un error: " + str(e))
+
+
 def detail_tokens():
     global expression
     lexer.input(expression)
@@ -333,53 +409,68 @@ def detail_tokens():
 
 def clear():
     global expression
-    expression = "0"
-    equation.set("0")
+    expression = ""
+    equation.set("")
+
+
+def borrarUltimo():
+    global expression
+    # Verifica si la expresión no está vacía
+    if expression:
+        # Elimina el último carácter de la cadena
+        expression = expression[:-1]
+        # Actualiza el valor de la expresión en la interfaz
+        equation.set(expression)
+    else:
+        # Si la expresión está vacía, asegúrate de que el valor mostrado también esté vacío
+        clear()
 
 
 # Configuración de la interfaz gráfica
 ventana = Tk()
 ventana.title("Calculadora")
-ventana.geometry("365x175")  # Ajuste del tamaño de la ventana
+ventana.geometry("380x380")  # Ajuste del tamaño de la ventana
 
 equation = StringVar()
-visor = Entry(textvariable=equation)
-visor.config(state='disabled')
-visor.grid(columnspan=4, ipadx=70)
-equation.set("0")
+visor = Entry(ventana, textvariable=equation, font=('Arial', 18),
+              bd=10, insertwidth=2, width=25, borderwidth=4)
+visor.grid(row=0, column=0, columnspan=4, padx=10, pady=10)
+
+clear()
 
 # Creación de los botones
 buttons = [
-    ('1', 2, 0), ('2', 2, 1), ('3', 2, 2), ('+', 2, 3),
-    ('4', 3, 0), ('5', 3, 1), ('6', 3, 2), ('-', 3, 3),
-    ('7', 4, 0), ('8', 4, 1), ('9', 4, 2), ('*', 4, 3),
-    ('0', 5, 0), ('Clear', 5, 1), ('=', 5, 2), ('/', 5, 3),
-    ('(', 6, 0), (')', 6, 3), ('Analizar', 6, 1),
-    ('Forma\nsentencial', 6, 2), ("Mostrar Árbol", 6, 2),
-
+    ('7', 1, 0), ('8', 1, 1), ('9', 1, 2), ('/', 1, 3),
+    ('4', 2, 0), ('5', 2, 1), ('6', 2, 2), ('*', 2, 3),
+    ('1', 3, 0), ('2', 3, 1), ('3', 3, 2), ('-', 3, 3),
+    ('0', 4, 0), ('=', 4, 1), ('<x|', 4, 2), ('+', 4, 3),
+    ('Clear', 5, 0), ('(', 5, 1), (')', 5, 2), ('Analizar', 5, 3),
+    ('Forma\nsentencial', 6, 0), ('Mostrar Árbol', 6, 1),
 ]
 
 for (text, row, col) in buttons:
     if text == '=':
-        button = Button(text=text, fg='black',
-                        command=equalpress, height=1, width=7)
+        button = Button(ventana, text=text, fg='black',
+                        command=equalpress, height=2, width=10)
     elif text == 'Clear':
-        button = Button(text=text, fg='black',
-                        command=clear, height=1, width=7)
+        button = Button(ventana, text=text, fg='black',
+                        command=clear, height=2, width=10)
     elif text == 'Forma\nsentencial':
-        button = Button(text=text, fg='black',
-                        command=mostrarDerivacion, height=2, width=7)
+        button = Button(ventana, text=text, fg='black',
+                        command=mostrarDerivacion, height=2, width=10)
     elif text == 'Analizar':
-        button = Button(text=text, fg='black',
-                        command=analyze_expression, height=1, width=7)
+        button = Button(ventana, text=text, fg='black',
+                        command=analyze_expression, height=2, width=10)
     elif text == "Mostrar Árbol":
-        button_show_tree = Button(text="Mostrar Árbol", fg='black',
-                                  command=generate_and_display_tree, height=1, width=15)
-        button_show_tree.grid(row=6, column=4)
-
+        button = Button(ventana, text=text, fg='black',
+                        command=generate_and_display_tree, height=2, width=10)
+    elif text == "<x|":
+        button = Button(ventana, text=text, fg='black',
+                        command=borrarUltimo, height=2, width=10)
     else:
-        button = Button(text=text, fg='black', bg='white',
-                        command=lambda t=text: press(t), height=1, width=7)
-    button.grid(row=row, column=col)
+        button = Button(ventana, text=text, fg='black', bg='white',
+                        command=lambda t=text: press(t), height=2, width=10)
+
+    button.grid(row=row, column=col, padx=5, pady=5)
 
 ventana.mainloop()
