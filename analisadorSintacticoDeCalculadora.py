@@ -300,9 +300,12 @@ def press(num):
 
 def evaluate(tree):
     if type(tree.hijos[0]) == int:
+            
         return tree.hijos[0]
     elif tree.hijos[1] == '+':
         return evaluate(tree.hijos[0]) + evaluate(tree.hijos[2])
+    elif tree.hijos[1] == '-':
+        return evaluate(tree.hijos[0])-evaluate(tree.hijos[2])
     elif tree.hijos[0] == '-':
         return -evaluate(tree.hijos[1])
     elif tree.hijos[1] == '*':
@@ -319,6 +322,7 @@ def equalpress():
         result = parser.parse(expression)
 
         analyze_expression()
+    
         result_value = evaluate(result)
 
         equation.set(str(int(result_value)))
