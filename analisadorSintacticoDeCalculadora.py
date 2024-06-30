@@ -1,4 +1,4 @@
-# Creditos a dabeaz,
+# Creditos a dabeaz por darnos una base
 from tkinter import *
 from tkinter import messagebox
 import ply.lex as lex
