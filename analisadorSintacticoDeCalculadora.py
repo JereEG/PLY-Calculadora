@@ -102,10 +102,10 @@ def p_expression_MENOS(p):
     'expression : expression MENOS termino'
 
     # Jere's idea
-    #p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
+    p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
 
     #   Mauri's idea
-    p[0] = Node('OperacionBinaria', [p[1], '+',Node('Negativo', [p[2], p[3]])])
+    #p[0] = Node('OperacionBinaria', [p[1], '+',Node('Negativo', [p[2], p[3]])])
 
 
 def p_factor_unary_minus(p):
