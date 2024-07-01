@@ -102,11 +102,10 @@ def p_expression_MENOS(p):
     'expression : expression MENOS termino'
 
     # Jere's idea
-    # p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
+    #p[0] = Node('OperacionBinaria', [p[1], p[2], p[3]])
 
     #   Mauri's idea
-    p[0] = Node('OperacionBinaria', [p[1], '+',
-                Node('Negativo', [p[2], p[3]])])
+    p[0] = Node('OperacionBinaria', [p[1], '+',Node('Negativo', [p[2], p[3]])])
 
 
 def p_factor_unary_minus(p):
@@ -162,16 +161,20 @@ parser = yacc.yacc()
 
 # Función para generar y graficar el árbol sintáctico
 def generate_and_display_tree():
-    global vExpression
+    global vExpression, syntax_error
 
     try:
-        result = parser.parse(vExpression, tracking=True)
-        print(f"Parser result: {result}")
-        if isinstance(result, Node):
-            graph = pydot.Dot(graph_type='graph')
-            add_node(graph, result)
-            graph.write_png('syntax_tree.png')
-            messagebox.showinfo(title="Árbol Sintáctico",
+        analyze_expression()
+        syntax_error = False
+        parser.parse(vExpression)
+        if(not syntax_error):
+            result = parser.parse(vExpression, tracking=True)
+            print(f"Parser result: {result}")
+            if isinstance(result, Node):
+                graph = pydot.Dot(graph_type='graph')
+                add_node(graph, result)
+                graph.write_png('syntax_tree.png')
+                messagebox.showinfo(title="Árbol Sintáctico",
                                 message="Árbol generado correctamente. Ver 'syntax_tree.png'.")
         else:
             messagebox.showerror(
@@ -188,42 +191,38 @@ def generate_and_display_tree():
 
 
 # Función recursiva para agregar nodos al árbol
-def add_node(p_grafo, p_nodo):
+def add_node(p_grafo, p_nodo, padres=None):
+    if padres is None:
+        padres = {}
+
     try:
-        # Asegurarse de que p_nodo sea una instancia de Node
         if not isinstance(p_nodo, Node):
-            # Convertir valor directo en un nuevo nodo con lista vacía de hijos
             p_nodo = Node(p_nodo, [])
 
         node_label = p_nodo.valor_nodo
-        # Identifica al nodo
         node_name = f"node_{id(p_nodo)}"
         p_grafo.add_node(pydot.Node(node_name, label=node_label))
 
         for hijo in p_nodo.hijos:
             if isinstance(hijo, Node):
                 hijo_nombre = f"node_{id(hijo)}"
-
                 if hijo_nombre in padres:
-                    # Si el hijo ya tiene un padre, creamos una copia del nodo hijo
                     nuevo_hijo = Node(hijo.valor_nodo, hijo.hijos)
-                    add_node(p_grafo, nuevo_hijo)
+                    add_node(p_grafo, nuevo_hijo, padres)
                     nuevo_hijo_nombre = f"node_{id(nuevo_hijo)}"
                     p_grafo.add_edge(pydot.Edge(node_name, nuevo_hijo_nombre))
                 else:
                     padres[hijo_nombre] = node_name
-                    add_node(p_grafo, hijo)
+                    add_node(p_grafo, hijo, padres)
                     p_grafo.add_edge(pydot.Edge(node_name, hijo_nombre))
             else:
-                # Manejo de valores directos, convertimos a un nuevo nodo de tipo `Node`
                 nuevo_hijo = Node(hijo, [])
-                add_node(p_grafo, nuevo_hijo)
+                add_node(p_grafo, nuevo_hijo, padres)
                 nuevo_hijo_nombre = f"node_{id(nuevo_hijo)}"
                 p_grafo.add_edge(pydot.Edge(node_name, nuevo_hijo_nombre))
     except Exception as e:
-        print(f"Error en add_node: {e}")
+        print(f"Error in add_node: {e}")
         raise
-
 
 # Función para actualizar el contenido del visor
 
@@ -255,16 +254,16 @@ def evaluate(tree):
 
 
 def equalpress():
-    global vExpression
+    global vExpression,syntax_error
     try:
         result = parser.parse(vExpression)
-
         analyze_expression()
-
-        result_value = evaluate(result)
-
-        equation.set(str(int(result_value)))
-        vExpression = str(int(result_value))
+        syntax_error = False
+        if(not syntax_error):
+        
+            result_value = evaluate(result)
+            equation.set(str(int(result_value)))
+            vExpression = str(int(result_value))
     except ZeroDivisionError:
         clear()
         messagebox.showerror(
